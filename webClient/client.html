@@ -1,0 +1,220 @@
+<html><head><title>WebSocket</title>
+<style type="text/css">
+html,body {
+	font:normal 0.9em arial,helvetica;
+}
+#log {
+	  width:600px;
+	  height:300px;
+	  border:1px solid #7F9DB9;
+
+	  display: inline-block;
+  }
+#users {
+	width:200px;
+	height:300px;
+	border:1px solid #7F9DB9;
+	display: inline-block;
+
+}
+#contents{
+	width: 900px;
+	display:block;
+}
+#msg {
+	width:400px;
+}
+</style>
+	<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+
+<script type="text/javascript">
+var socket;
+var superClient;
+function init() {
+	var host = "ws://vidal.ws:443/echobot"; // SET THIS TO YOUR SERVER
+	try {
+		socket = new WebSocket(host);
+		log('WebSocket - status '+socket.readyState);
+		socket.onopen    = function(msg) { 
+							   log("Welcome - status "+this.readyState); 
+						   };
+		socket.onmessage = function(msg) { 
+							 // log("Received: "+msg.data);
+							// alert(msg.data);
+							parseInput( msg.data );
+						   };
+		socket.onclose   = function(msg) { 
+							   log("Disconnected - status "+this.readyState); 
+						   };
+	}
+	catch(ex){ 
+		log(ex); 
+	}
+	$("msg").focus();
+
+	// buscamos los clientes que hay en el chat !
+
+}
+
+function getClients (){
+	//alert("?");
+	//socket.send("getUsers");
+
+	sendData("getUsers","getUsers");
+
+
+
+
+
+
+}
+function parseInput( data ) {
+
+	// decode the protocol !
+
+
+
+
+
+
+	var protocol = jQuery.parseJSON( data );
+
+
+  //alert ("test: " + protocol.cmd + " Valor de Data: " + data);
+
+	var mensaje = protocol["msg"];
+	var client = protocol["client"];
+	var cmd = protocol["cmd"];
+	//alert(cmd);
+	if(cmd == 'msg') {
+		log("Received: "+mensaje);
+	}else if(cmd == 'clients'){
+		alert (" llegaron los clientes");
+		// rompemos el otro arreglo de los clientes.
+
+
+	}else if (cmd == 'ACK'){
+		log("Received: "+mensaje);
+	}else if (cmd =='users') {
+		log("Users: " + mensaje);
+
+		var clients = jQuery.parseJSON( mensaje );
+		var variable ='' ;
+		 //alert ("|" +mensaje +"|");
+
+
+		//$("#cli").html( "test" );
+
+		for(i = 0; i < clients.length ; i++){
+			// creamos los diferentes uid para enviar mensajes . !!
+			//alert(clients[i] +" "+ clients.length);
+			variable += "<input type='radio' name='client' onClick='setValue(this)' value='" + clients[i] + "' >"+ clients[i] + "<br>";
+
+
+
+		}
+		document.getElementById("cli").innerHTML = variable;
+		//$("#cli").innerHTML(inputs);
+
+	}
+
+
+}
+
+function send(){
+	var txt,msg;
+	txt = $("msg");
+	msg = txt.value;
+	if(!msg) { 
+		alert("Message can not be empty"); 
+		return; 
+	}
+	txt.value="";
+	txt.focus();
+	try {
+		sendData("msg",msg);
+		//socket.send(msg);
+		log('Sent: '+msg); 
+	} catch(ex) { 
+		log(ex); 
+	}
+}
+function setValue(obj) {
+
+	superClient = obj.value;
+
+}
+function sendData(cmd, data) {
+
+	var datos = { cmd:cmd, msg:data } ;
+	var json;
+	json = JSON.stringify(datos);
+	socket.send(json);
+	// alert(json);
+}
+function quit(){
+	if (socket != null) {
+		log("Goodbye!");
+		socket.close();
+		socket=null;
+	}
+}
+
+function reconnect() {
+	quit();
+	init();
+}
+function sendCmd(cmd, pin){
+	//alert ("Message Send: " + cmd + " pin" +pin );
+	// enviamos mensaje customizado para el pin
+//	var client = document.getElementById("client").value;
+	var client = superClient;
+	//alert (client);
+	var datos = { cmd:cmd, msg:pin,client:client } ;
+	var json;
+	json = JSON.stringify(datos);
+	socket.send(json);
+
+
+}
+
+// Utilities
+function $(id){ return document.getElementById(id); }
+function log(msg){ $("log").innerHTML+="<br>"+msg; }
+function onkey(event){ if(event.keyCode==13){ send(); } }
+</script>
+
+</head>
+<body onload="init()">
+<h3>WebSocket </h3>
+
+
+	<table>
+		<tr>
+			<td><div id="log" > </div></td>
+			<td><div id="users" >
+
+
+			</div></td>
+		</tr>
+		<tr><td >
+
+			<div id="cli" >Please Get Clients</div>
+		</td></tr>
+		<tr><td>
+			<h3>Options </h3>
+			<input type="radio" name="cmd" value="digitalWriteOn" > Digital Write 14
+
+		</td></tr>
+	</table>
+
+
+<input id="msg" type="textbox" onkeypress="onkey(event)"/>
+<button onclick="send()">Send</button>
+<button onclick="quit()">Quit</button>
+<button onclick="reconnect()">Reconnect</button>
+<button onclick="getClients()">Get Clients <input type="radio" name="client" value="test" hidden> </button>
+<button onclick="sendCmd('digitalWriteOn','5')">Power ON Led on Pin 5 </button>
+<button onclick="sendCmd('digitalWriteOff','5')">Power OFF Led on Pin 5 </button>
+</body>
+</html>
